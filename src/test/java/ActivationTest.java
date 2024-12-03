@@ -22,8 +22,7 @@ public class ActivationTest {
         String customer = ActivationSteps.getCustomerById(customerId, token);
         System.out.println("User: " + customer);
 
-        /*String findByPhoneNum = CustomerService.findCustomerByPhoneNumber(token, customer);
-        System.out.println(findByPhoneNum);*/
+
 
     }
 
@@ -41,9 +40,6 @@ public class ActivationTest {
 
         String customer = ActivationSteps.getCustomerById(customerId, token);
         System.out.println("Admin: " + customer);
-
-        /*String findByPhoneNum = CustomerService.findCustomerByPhoneNumber(token, customer);
-        System.out.println(findByPhoneNum);*/
 
     }
 }
