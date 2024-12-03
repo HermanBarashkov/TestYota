@@ -2,34 +2,35 @@ package Steps;
 
 import io.restassured.RestAssured;
 import io.restassured.response.Response;
+import model.CustomerPOJO;
 import org.awaitility.Awaitility;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.List;
-import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
-public class ActivationSteps {
+public class Activation {
 
+
+    static String errorMessage, customerId, status, addParam, pd;
     static List<Long> result;
-    static String errorMessage;
-
-    static String customerId;
-
-    static String status, json;
     static Long phone;
+
+
 
     public static String getLogin(String login, String password){
 
         return  RestAssured.given()
                 .contentType("application/json")
                 .body("{\"login\": \"" + login + "\", \"password\": \"" + password + "\"}")
-                .post("http://localhost:8090/login")
+                .post("/login")
                 .then().statusCode(200)
                 .extract().jsonPath().getString("token");
     }
 
     public static List<Long> getEmptyPhone(String token){
-
 
         Awaitility.await()
                 .atMost(1, TimeUnit.MINUTES)
@@ -37,7 +38,7 @@ public class ActivationSteps {
                 .until(() -> {
                     Response response = RestAssured.given()
                             .header("authToken", token)
-                            .get("http://localhost:8090/simcards/getEmptyPhone")
+                            .get("/simcards/getEmptyPhone")
                             .then()
                             .extract().response();
                     if (response.getStatusCode() == 200){
@@ -71,7 +72,7 @@ public class ActivationSteps {
                                         "        \"string\":\"" + addParam + "\" " +
                                         "    } " +
                                         "}")
-                                .post("http://localhost:8090/customer/postCustomer")
+                                .post("/customer/postCustomer")
                                 .then().extract().response();
                         if (response.getStatusCode() == 200) {
                             customerId = response.jsonPath().getString("id");
@@ -84,29 +85,47 @@ public class ActivationSteps {
         return customerId;
     }
 
-    public static String getCustomerById(String customerId, String token){
+    public static CustomerPOJO getCustomerById(String customerId, String token){
+
         Awaitility.await()
                 .atMost(125, TimeUnit.SECONDS)
                 .pollInterval(5, TimeUnit.SECONDS)
                 .until(() -> {
                     Response response = RestAssured.given()
+                            .contentType("application/json")
                             .header("authToken", token)
                             .queryParam("customerId", customerId)
-                            .contentType("application/json")
-                            .get("http://localhost:8090/customer/getCustomerById")
+                            .get("/customer/getCustomerById")
                             .then()
                             .extract().response();
                     if (response.statusCode() == 200){
                         status = response.jsonPath().getString("return.status");
-                        json = response.jsonPath().getString("return");
+                        phone = response.jsonPath().getLong("return.phone");
+                        addParam = response.jsonPath().getString("return.additionalParameters");
+                        pd = response.jsonPath().getString("return.pd");
+
                         return "ACTIVE".equals(status);
                     }
-                    else {System.out.println(status);
-                        return false;}
+                    return false;
                 });
-        return json;
+        return new CustomerPOJO(status,phone,addParam,pd);
     }
 
-
-
+    public static void findByPhoneNumber(String token, Long phone){
+        String xmlBody;
+        try {
+            xmlBody = new String(Files.readAllBytes(Paths.get("src/test/resources/xmlQuery.xml")));
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        String rightXmlBody = xmlBody.replace("{authToken}", token).replace("{phone}", phone.toString());
+        Response response = RestAssured.given()
+                .header("Content-Type", "application/xml")
+                .body(rightXmlBody)
+                .post("/customer/findByPhoneNumber")
+                .then().extract().response();
+        if (response.statusCode() == 200){
+            System.out.println(response.jsonPath().getString("Envelope.Body.customerId"));
+        }
+    }
 }

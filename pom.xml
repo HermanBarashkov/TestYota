@@ -49,16 +49,27 @@
             <version>4.2.0</version>
         </dependency>
 
-            <dependency>
-                <groupId>javax.xml.ws</groupId>
-                <artifactId>jaxws-api</artifactId>
-                <version>RELEASE</version> <!-- Или последнюю доступную версию -->
-            </dependency>
-            <dependency>
-                <groupId>com.sun.xml.ws</groupId>
-                <artifactId>rt</artifactId>
-                <version>RELEASE</version> <!-- Или последнюю доступную версию -->
-            </dependency>
+        <dependency>
+            <groupId>javax.xml.ws</groupId>
+            <artifactId>jaxws-api</artifactId>
+            <version>RELEASE</version> <!-- Или последнюю доступную версию -->
+        </dependency>
+        <dependency>
+            <groupId>com.sun.xml.ws</groupId>
+            <artifactId>rt</artifactId>
+            <version>RELEASE</version> <!-- Или последнюю доступную версию -->
+        </dependency>
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <version>RELEASE</version> <!-- Укажите актуальную версию -->
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.aeonbits.owner</groupId>
+            <artifactId>owner</artifactId>
+            <version>1.0.12</version>
+        </dependency>
     </dependencies>
 
 

@@ -1,45 +1,59 @@
 import Steps.*;
+import config.WebConfigProvider;
+import io.restassured.RestAssured;
+import model.CustomerPOJO;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
-import java.util.Objects;
 
 
 public class ActivationTest {
 
+    @BeforeAll
+    public static void precondition(){
+        RestAssured.baseURI = WebConfigProvider.getProps().yotaUrl();
+    }
+
     @Test
     public void testActivateUser(){
 
-        String token = ActivationSteps.getLogin("user", "password");
+        String token = Activation.getLogin("user", "password");
         System.out.println("User: " + token);
 
-        List<Long> phones = ActivationSteps.getEmptyPhone(token);
+        List<Long> phones = Activation.getEmptyPhone(token);
         System.out.println("User: " + phones);
 
-        String customerId = ActivationSteps.postCustomer(token, phones, "Мужик");
+        String customerId = Activation.postCustomer(token, phones, "Мужик");
         System.out.println("User: " + customerId);
 
-        String customer = ActivationSteps.getCustomerById(customerId, token);
-        System.out.println("User: " + customer);
-
-
-
+        CustomerPOJO customer = Activation.getCustomerById(customerId, token);
+        System.out.println("User: " + customer.getStatus());
+        System.out.println("User: " + customer.getPhone());
+        System.out.println("User: " + customer.getAddParam());
+        System.out.println("User: " + customer.getPd());
+        //Activation.findByPhoneNumber(token, customer.getPhone());
     }
 
     @Test
     public void testActivateAdmin(){
 
-        String token = ActivationSteps.getLogin("admin", "password");
+        String token = Activation.getLogin("admin", "password");
         System.out.println("Admin: " + token);
 
-        List<Long> phones = ActivationSteps.getEmptyPhone(token);
+        List<Long> phones = Activation.getEmptyPhone(token);
         System.out.println("Admin: " + phones);
 
-        String customerId = ActivationSteps.postCustomer(token, phones, "Женина");
+        String customerId = Activation.postCustomer(token, phones, "Женина");
         System.out.println("Admin: " + customerId);
 
-        String customer = ActivationSteps.getCustomerById(customerId, token);
-        System.out.println("Admin: " + customer);
+        CustomerPOJO customer = Activation.getCustomerById(customerId, token);
+        System.out.println("Admin: " + customer.getStatus());
+        System.out.println("Admin: " + customer.getPhone());
+        System.out.println("Admin: " + customer.getAddParam());
+        System.out.println("Admin: " + customer.getPd());
+
+        //Activation.findByPhoneNumber(token, customer.getPhone());
 
     }
 }
