@@ -1,4 +1,4 @@
-package config;
+package service.config;
 
 import lombok.Getter;
 import org.aeonbits.owner.ConfigFactory;
