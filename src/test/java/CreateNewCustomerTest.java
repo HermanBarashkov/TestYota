@@ -1,4 +1,5 @@
-import org.testng.annotations.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import service.BaseTest;
 import service.Employer;
 import steps.ActivationSteps;
@@ -7,10 +8,10 @@ import steps.ActivationSteps;
 public class CreateNewCustomerTest extends BaseTest {
     ActivationSteps activationSteps = new ActivationSteps();
 
-    @Test(description = "ТК№11,30 Создание кастомера",
-            dataProvider = "token",  groups = "active")
+   @ParameterizedTest
+   @MethodSource("dataProviderToken")
     public void createNewCusomer(Employer employer){
-        activationSteps.postCustomer(employer.getToken(),
-                activationSteps.getEmptyPhone(employer.getToken()));
+        System.out.println(activationSteps.postCustomer(employer.getToken(),
+                activationSteps.getEmptyPhone(employer.getToken())));
     }
 }

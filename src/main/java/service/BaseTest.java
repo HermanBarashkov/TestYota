@@ -1,32 +1,30 @@
 package service;
 
-import org.testng.annotations.BeforeSuite;
-import org.testng.annotations.DataProvider;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.params.provider.Arguments;
 import steps.ActivationSteps;
+import java.util.stream.Stream;
 
 public class BaseTest {
     public static Employer admin;
     public static Employer user;
 
-    ActivationSteps activationSteps = new ActivationSteps();
+    static ActivationSteps activationSteps = new ActivationSteps();
 
-    @BeforeSuite
-    public void InitTest(){
-        String token = activationSteps.
-                getAuthToken(System.getProperty("loginAdmin"),
-                        System.getProperty("passwordAdmin"));
+    @BeforeAll
+    public static void initTest() {
+        String token = activationSteps.getAuthToken("admin", "password");
         admin = new Employer(token, Employer.roleEnum.ADMIN);
-        token = activationSteps
-                .getAuthToken(System.getProperty("loginUser"),
-                        System.getProperty("passwordUser"));
+
+        token = activationSteps.getAuthToken("user", "password");
         user = new Employer(token, Employer.roleEnum.USER);
     }
 
-    @DataProvider(name = "token", parallel = true)
-    public Object[][] dataProviderToken(){
-        return new Object[][]{
-                {admin}, {user}
-        };
+    static Stream<Arguments> dataProviderToken() {
+        return Stream.of(
+                Arguments.of(admin),
+                Arguments.of(user)
+        );
     }
 
 }

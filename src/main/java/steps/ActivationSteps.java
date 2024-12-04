@@ -6,6 +6,7 @@ import io.restassured.path.xml.XmlPath;
 import io.restassured.response.Response;
 import service.pojo.AddParam;
 import service.pojo.AuthRequestPOJO;
+import service.pojo.ChangeCustomerStatusPOJO;
 import service.pojo.CreateCustomerPOJO;
 
 import java.io.IOException;
@@ -21,12 +22,13 @@ import static org.awaitility.Awaitility.await;
 public class ActivationSteps {
 
 
-    static String errorMessage, customerId, status, addParam, pd;
+    static String errorMessage, customerId, status;
     static List<String> result;
     public Long phone;
 
     AuthRequestPOJO authRequestPOJO = new AuthRequestPOJO();
     CreateCustomerPOJO createCustomerPOJO = new CreateCustomerPOJO();
+    ChangeCustomerStatusPOJO changeCustomerStatusPOJO = new ChangeCustomerStatusPOJO();
 
 
 
@@ -48,6 +50,7 @@ public class ActivationSteps {
                 .until(() -> {
                     Response response = given()
                             .spec(RequestSpecApi.REQUEST_SPECIFICATION_JSON)
+                            .header("authToken", token)
                             .get("/simcards/getEmptyPhone")
                             .then()
                             .extract().response();
@@ -92,14 +95,14 @@ public class ActivationSteps {
         return customerId;
     }
 
-    /*public static CreateCustomerPOJO getCustomerById(String customerId, String token){
+    public void getCustomerById(String token, String customerId){
 
-        Awaitility.await()
+        await()
                 .atMost(125, TimeUnit.SECONDS)
                 .pollInterval(5, TimeUnit.SECONDS)
                 .until(() -> {
-                    Response response = RestAssured.given()
-                            .contentType("application/json")
+                    Response response = given()
+                            .spec(RequestSpecApi.REQUEST_SPECIFICATION_JSON)
                             .header("authToken", token)
                             .queryParam("customerId", customerId)
                             .when()
@@ -107,18 +110,11 @@ public class ActivationSteps {
                             .then()
                             .extract().response();
                     if (response.statusCode() == 200){
-                        status = response.jsonPath().getString("return.status");
-                        phone = response.jsonPath().getLong("return.phone");
-                        addParam = response.jsonPath().getString("return.additionalParameters");
-                        pd = response.jsonPath().getString("return.pd");
-
                         return "ACTIVE".equals(status);
                     }
                     return false;
                 });
-        return new CreateCustomerPOJO(status,phone,addParam);
     }
-*/
     public static void findByPhoneNumber(String token, Long phone){
         String xmlBody;
         try {
@@ -147,12 +143,13 @@ public class ActivationSteps {
         }
     }
 
-    public static void changeCustomerStatus(String token, String customerId, String status){
+    public void changeCustomerStatus(String token, String customerId, String status){
         given()
-                .contentType("application/json")
+                .spec(RequestSpecApi.REQUEST_SPECIFICATION_JSON)
                 .header("authToken", token)
                 .pathParam("customerId", customerId)
-                .body("{\"staus\":\""+status+"\"}")
+                .body(changeCustomerStatusPOJO.withStatus(status))
+                .when()
                 .post("/customer/{customerId}/changeCustomerStatus")
                 .then()
                 .extract().response();
