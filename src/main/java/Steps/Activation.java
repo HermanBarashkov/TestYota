@@ -1,6 +1,8 @@
 package Steps;
 
 import io.restassured.RestAssured;
+import static io.restassured.RestAssured.given;
+import io.restassured.path.xml.XmlPath;
 import io.restassured.response.Response;
 import model.CustomerPOJO;
 import org.awaitility.Awaitility;
@@ -22,7 +24,7 @@ public class Activation {
 
     public static String getLogin(String login, String password){
 
-        return  RestAssured.given()
+        return given()
                 .contentType("application/json")
                 .body("{\"login\": \"" + login + "\", \"password\": \"" + password + "\"}")
                 .post("/login")
@@ -118,14 +120,38 @@ public class Activation {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-        String rightXmlBody = xmlBody.replace("{authToken}", token).replace("{phone}", phone.toString());
+        String responseBody = xmlBody
+                .replace("{authToken}", token.trim())
+                .replace("{phone}", phone.toString());
+        System.out.println("Final XML body: " + responseBody);
+
         Response response = RestAssured.given()
                 .header("Content-Type", "application/xml")
-                .body(rightXmlBody)
+                .body(responseBody)
+                .when()
                 .post("/customer/findByPhoneNumber")
                 .then().extract().response();
-        if (response.statusCode() == 200){
-            System.out.println(response.jsonPath().getString("Envelope.Body.customerId"));
+        if (response.statusCode() == 200) {
+            System.out.println(response.asString());
+            XmlPath xmlPath = new XmlPath(response.getBody().asString());
+            System.out.println(xmlPath.getString("Envelope.Body.customerId"));
+        } else {
+            System.err.println("Error: Status code " + response.statusCode());
+            System.err.println("Response: " + response.asString());
         }
     }
+
+    public static void changeCustomerStatus(String token, String customerId, String status){
+        RestAssured.given()
+                .contentType("application/json")
+                .header("authToken", token)
+                .pathParam("customerId", customerId)
+                .body("{\"staus\":\""+status+"\"}")
+                .post("/customer/{customerId}/changeCustomerStatus")
+                .then()
+                .extract().response();
+        System.out.println("Статус изменен на: " + status);
+    }
+
+
 }

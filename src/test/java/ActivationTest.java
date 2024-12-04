@@ -32,7 +32,10 @@ public class ActivationTest {
         System.out.println("User: " + customer.getPhone());
         System.out.println("User: " + customer.getAddParam());
         System.out.println("User: " + customer.getPd());
-        //Activation.findByPhoneNumber(token, customer.getPhone());
+
+        Activation.findByPhoneNumber(token, customer.getPhone());
+
+        Activation.changeCustomerStatus(token,customerId,"NEW");
     }
 
     @Test
@@ -53,8 +56,9 @@ public class ActivationTest {
         System.out.println("Admin: " + customer.getAddParam());
         System.out.println("Admin: " + customer.getPd());
 
-        //Activation.findByPhoneNumber(token, customer.getPhone());
+        Activation.findByPhoneNumber(token, customer.getPhone());
 
+        Activation.changeCustomerStatus(token,customerId,"NEW");
     }
 }
 
