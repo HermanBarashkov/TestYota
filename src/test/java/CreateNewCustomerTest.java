@@ -4,13 +4,12 @@ import service.BaseTest;
 import service.Employer;
 import steps.ActivationSteps;
 
-
 public class CreateNewCustomerTest extends BaseTest {
     ActivationSteps activationSteps = new ActivationSteps();
 
    @ParameterizedTest
    @MethodSource("dataProviderToken")
-    public void createNewCusomer(Employer employer){
+    public void createNewCustomer(Employer employer){
         System.out.println(activationSteps.postCustomer(employer.getToken(),
                 activationSteps.getEmptyPhone(employer.getToken())));
     }

@@ -10,9 +10,9 @@ public class ActivatedCustomerTest extends BaseTest {
     @ParameterizedTest
     @MethodSource("dataProviderToken")
     public void activatedCustomer(Employer employer){
-        activationSteps.getCustomerById(employer.getToken(),
+        System.out.println(activationSteps.getCustomerById(employer.getToken(),
                 activationSteps.postCustomer(employer.getToken(),
-                        activationSteps.getEmptyPhone(employer.getToken())));
+                        activationSteps.getEmptyPhone(employer.getToken()))));
     }
 
 }

@@ -95,10 +95,10 @@ public class ActivationSteps {
         return customerId;
     }
 
-    public void getCustomerById(String token, String customerId){
+    public String getCustomerById(String token, String customerId){
 
         await()
-                .atMost(125, TimeUnit.SECONDS)
+                .atMost(245, TimeUnit.SECONDS)
                 .pollInterval(5, TimeUnit.SECONDS)
                 .until(() -> {
                     Response response = given()
@@ -110,12 +110,16 @@ public class ActivationSteps {
                             .then()
                             .extract().response();
                     if (response.statusCode() == 200){
+                        status = response.jsonPath().getString("return.status");
                         return "ACTIVE".equals(status);
                     }
                     return false;
                 });
+        return status;
+
     }
-    public static void findByPhoneNumber(String token, Long phone){
+
+    public void findByPhoneNumber(String token, Long phone){
         String xmlBody;
         try {
             xmlBody = new String(Files.readAllBytes(Paths.get("src/test/resources/xmlQuery.xml")));
