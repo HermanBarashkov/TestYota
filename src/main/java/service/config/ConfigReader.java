@@ -1,4 +1,4 @@
-package config;
+package service.config;
 
 import org.aeonbits.owner.Config;
 import org.aeonbits.owner.Config.Sources;
