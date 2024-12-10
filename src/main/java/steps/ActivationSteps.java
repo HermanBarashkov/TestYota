@@ -14,6 +14,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static io.restassured.RestAssured.given;
 import static org.awaitility.Awaitility.await;
@@ -22,9 +23,8 @@ import static org.awaitility.Awaitility.await;
 public class ActivationSteps {
 
 
-    static String errorMessage, customerId, status;
+    static String errorMessage, customerId, rightPhone, status;
     static List<String> result;
-    public Long phone;
 
     AuthRequestPOJO authRequestPOJO = new AuthRequestPOJO();
     CreateCustomerPOJO createCustomerPOJO = new CreateCustomerPOJO();
@@ -43,7 +43,7 @@ public class ActivationSteps {
                 .extract().path("token");
     }
 
-    public List<String> getEmptyPhone(String token){
+    public List<String> getEmptyPhones(String token){
         await()
                 .atMost(1, TimeUnit.MINUTES)
                 .pollInterval(100, TimeUnit.MILLISECONDS)
@@ -86,13 +86,14 @@ public class ActivationSteps {
                                 .then().extract().response();
                         if (response.getStatusCode() == 200) {
                             customerId = response.jsonPath().getString("id");
+                            rightPhone = phone;
                             return true;
                         }
                     }
 
                     return false;
                 });
-        return customerId;
+        return rightPhone;
     }
 
     public String getCustomerById(String token, String customerId){
@@ -119,21 +120,21 @@ public class ActivationSteps {
 
     }
 
-    public void findByPhoneNumber(String token, Long phone){
+    public void findByPhoneNumber(String token, String phone){
         String xmlBody;
         try {
             xmlBody = new String(Files.readAllBytes(Paths.get("src/test/resources/xmlQuery.xml")));
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-        String responseBody = xmlBody
+        String responseXmlBody = xmlBody
                 .replace("{authToken}", token.trim())
-                .replace("{phone}", phone.toString());
-        System.out.println("Final XML body: " + responseBody);
+                .replace("{phone}", phone);
+        System.out.println("Final XML body: " + responseXmlBody);
 
         Response response = RestAssured.given()
-                .header("Content-Type", "application/xml")
-                .body(responseBody)
+                .spec(RequestSpecApi.REQUEST_SPECIFICATION_XML)
+                .body(responseXmlBody)
                 .when()
                 .post("/customer/findByPhoneNumber")
                 .then().extract().response();

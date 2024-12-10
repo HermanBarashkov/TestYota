@@ -12,7 +12,7 @@ public class ActivatedCustomerTest extends BaseTest {
     public void activatedCustomer(Employer employer){
         System.out.println(activationSteps.getCustomerById(employer.getToken(),
                 activationSteps.postCustomer(employer.getToken(),
-                        activationSteps.getEmptyPhone(employer.getToken()))));
+                        activationSteps.getEmptyPhones(employer.getToken()))));
     }
 
 }

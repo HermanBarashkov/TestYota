@@ -10,6 +10,8 @@ public class NewCustomerOldSystemTest extends BaseTest {
     @ParameterizedTest
     @MethodSource("dataProviderToken")
     public void findCustomerByPhoneNumber(Employer employer){
-        activationSteps.findByPhoneNumber(employer.getToken(), );
+        activationSteps.findByPhoneNumber(employer.getToken(),
+                activationSteps.postCustomer(employer.getToken(),
+                        activationSteps.getEmptyPhones(employer.getToken())));
     }
 }

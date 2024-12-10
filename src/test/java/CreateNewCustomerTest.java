@@ -11,6 +11,6 @@ public class CreateNewCustomerTest extends BaseTest {
    @MethodSource("dataProviderToken")
     public void createNewCustomer(Employer employer){
         System.out.println(activationSteps.postCustomer(employer.getToken(),
-                activationSteps.getEmptyPhone(employer.getToken())));
+                activationSteps.getEmptyPhones(employer.getToken())));
     }
 }

@@ -15,8 +15,9 @@ public class RequestSpecApi {
                     .setContentType(ContentType.JSON)
                     .build();
 
-    public static final ResponseSpecification RESPONSE_SPECIFICATION =
-            new ResponseSpecBuilder()
-                    .expectStatusCode(200)
+    public static final RequestSpecification REQUEST_SPECIFICATION_XML =
+            new RequestSpecBuilder()
+                    .setBaseUri("http://localhost:8090")
+                    .setContentType(ContentType.XML)
                     .build();
 }
