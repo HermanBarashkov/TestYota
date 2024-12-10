@@ -1,50 +1,61 @@
-package Steps;
+package steps;
 
+import service.config.RequestSpecApi;
 import io.restassured.RestAssured;
-import static io.restassured.RestAssured.given;
 import io.restassured.path.xml.XmlPath;
 import io.restassured.response.Response;
-import model.CustomerPOJO;
-import org.awaitility.Awaitility;
+import service.pojo.AddParam;
+import service.pojo.AuthRequestPOJO;
+import service.pojo.ChangeCustomerStatusPOJO;
+import service.pojo.CreateCustomerPOJO;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
-public class Activation {
-
-
-    static String errorMessage, customerId, status, addParam, pd;
-    static List<Long> result;
-    static Long phone;
+import static io.restassured.RestAssured.given;
+import static org.awaitility.Awaitility.await;
 
 
+public class ActivationSteps {
 
-    public static String getLogin(String login, String password){
+
+    static String errorMessage, customerId, rightPhone, status;
+    static List<String> result;
+
+    AuthRequestPOJO authRequestPOJO = new AuthRequestPOJO();
+    CreateCustomerPOJO createCustomerPOJO = new CreateCustomerPOJO();
+    ChangeCustomerStatusPOJO changeCustomerStatusPOJO = new ChangeCustomerStatusPOJO();
+
+
+
+    public String getAuthToken(String login, String password){
 
         return given()
-                .contentType("application/json")
-                .body("{\"login\": \"" + login + "\", \"password\": \"" + password + "\"}")
+                .spec(RequestSpecApi.REQUEST_SPECIFICATION_JSON)
+                .body(authRequestPOJO.withLogin(login).withPassword(password))
+                .when()
                 .post("/login")
                 .then().statusCode(200)
-                .extract().jsonPath().getString("token");
+                .extract().path("token");
     }
 
-    public static List<Long> getEmptyPhone(String token){
-
-        Awaitility.await()
+    public List<String> getEmptyPhones(String token){
+        await()
                 .atMost(1, TimeUnit.MINUTES)
                 .pollInterval(100, TimeUnit.MILLISECONDS)
                 .until(() -> {
-                    Response response = RestAssured.given()
+                    Response response = given()
+                            .spec(RequestSpecApi.REQUEST_SPECIFICATION_JSON)
                             .header("authToken", token)
                             .get("/simcards/getEmptyPhone")
                             .then()
                             .extract().response();
                     if (response.getStatusCode() == 200){
-                        List<Long> phones = response.jsonPath().getList("phones.phone", Long.class);
+                        List<String> phones = response.jsonPath().getList("phones.phone", String.class);
                         if (!phones.isEmpty()){
                             result = phones;
                             return true;
@@ -57,77 +68,73 @@ public class Activation {
         return result;
     }
 
-    public static String postCustomer(String token, List<Long> phones, String addParam) {
-
-        Awaitility.await()
+    public String postCustomer(String token, List<String> phones) {
+        await()
                 .atMost(1, TimeUnit.MINUTES)
                 .pollInterval(100, TimeUnit.MILLISECONDS)
                 .until(() -> {
-                    for (Long phone : phones) {
-                        Response response = RestAssured.given()
-                                .contentType("application/json")
+                    for (String phone : phones) {
+                        Response response = given()
+                                .spec(RequestSpecApi.REQUEST_SPECIFICATION_JSON)
                                 .header("authToken", token)
-                                .body("{" +
-                                        "    \"name\":\"арсений\", " +
-                                        "    \"phone\":" + phone + ", " +
-                                        "    \"additionalParameters\":{ " +
-                                        "        \"string\":\"" + addParam + "\" " +
-                                        "    } " +
-                                        "}")
+                                .body(createCustomerPOJO
+                                        .withName("Петя")
+                                        .withPhone(phone)
+                                        .withAddParam(new AddParam().withString("string")))
+                                .when()
                                 .post("/customer/postCustomer")
                                 .then().extract().response();
                         if (response.getStatusCode() == 200) {
                             customerId = response.jsonPath().getString("id");
+                            rightPhone = phone;
                             return true;
                         }
                     }
 
                     return false;
                 });
-        return customerId;
+        return rightPhone;
     }
 
-    public static CustomerPOJO getCustomerById(String customerId, String token){
+    public String getCustomerById(String token, String customerId){
 
-        Awaitility.await()
-                .atMost(125, TimeUnit.SECONDS)
+        await()
+                .atMost(245, TimeUnit.SECONDS)
                 .pollInterval(5, TimeUnit.SECONDS)
                 .until(() -> {
-                    Response response = RestAssured.given()
-                            .contentType("application/json")
+                    Response response = given()
+                            .spec(RequestSpecApi.REQUEST_SPECIFICATION_JSON)
                             .header("authToken", token)
                             .queryParam("customerId", customerId)
+                            .when()
                             .get("/customer/getCustomerById")
                             .then()
                             .extract().response();
                     if (response.statusCode() == 200){
                         status = response.jsonPath().getString("return.status");
-                        phone = response.jsonPath().getLong("return.phone");
-                        addParam = response.jsonPath().getString("return.additionalParameters");
-                        pd = response.jsonPath().getString("return.pd");
-
                         return "ACTIVE".equals(status);
                     }
                     return false;
                 });
-        return new CustomerPOJO(status,phone,addParam,pd);
+        return status;
+
     }
 
-    public static void findByPhoneNumber(String token, Long phone){
+    public void findByPhoneNumber(String token, String phone){
         String xmlBody;
         try {
             xmlBody = new String(Files.readAllBytes(Paths.get("src/test/resources/xmlQuery.xml")));
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-        String responseBody = xmlBody
+        String responseXmlBody = xmlBody
                 .replace("{authToken}", token.trim())
-                .replace("{phone}", phone.toString());
-        System.out.println("Final XML body: " + responseBody);
+                .replace("{phone}", phone);
+        System.out.println("Final XML body: " + responseXmlBody);
 
         Response response = RestAssured.given()
-                .header("Content-Type", "application/xml")
-                .body(responseBody)
+                .spec(RequestSpecApi.REQUEST_SPECIFICATION_XML)
+                .body(responseXmlBody)
                 .when()
                 .post("/customer/findByPhoneNumber")
                 .then().extract().response();
@@ -141,12 +148,13 @@ public class Activation {
         }
     }
 
-    public static void changeCustomerStatus(String token, String customerId, String status){
-        RestAssured.given()
-                .contentType("application/json")
+    public void changeCustomerStatus(String token, String customerId, String status){
+        given()
+                .spec(RequestSpecApi.REQUEST_SPECIFICATION_JSON)
                 .header("authToken", token)
                 .pathParam("customerId", customerId)
-                .body("{\"staus\":\""+status+"\"}")
+                .body(changeCustomerStatusPOJO.withStatus(status))
+                .when()
                 .post("/customer/{customerId}/changeCustomerStatus")
                 .then()
                 .extract().response();
