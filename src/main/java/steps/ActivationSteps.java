@@ -46,7 +46,7 @@ public class ActivationSteps {
     public List<String> getEmptyPhones(String token){
         await()
                 .atMost(1, TimeUnit.MINUTES)
-                .pollInterval(100, TimeUnit.MILLISECONDS)
+                .pollInterval(200, TimeUnit.MILLISECONDS)
                 .until(() -> {
                     Response response = given()
                             .spec(RequestSpecApi.REQUEST_SPECIFICATION_JSON)
