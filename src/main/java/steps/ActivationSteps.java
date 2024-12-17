@@ -68,33 +68,41 @@ public class ActivationSteps {
         return result;
     }
 
-    public String postCustomer(String token, List<String> phones) {
-        await()
-                .atMost(1, TimeUnit.MINUTES)
-                .pollInterval(100, TimeUnit.MILLISECONDS)
-                .until(() -> {
-                    for (String phone : phones) {
-                        Response response = given()
-                                .spec(RequestSpecApi.REQUEST_SPECIFICATION_JSON)
-                                .header("authToken", token)
-                                .body(createCustomerPOJO
-                                        .withName("Петя")
-                                        .withPhone(phone)
-                                        .withAddParam(new AddParam().withString("string")))
-                                .when()
-                                .post("/customer/postCustomer")
-                                .then().extract().response();
-                        if (response.getStatusCode() == 200) {
-                            customerId = response.jsonPath().getString("id");
-                            rightPhone = phone;
-                            return true;
-                        }
-                    }
+    public String postCustomer(String token, List<String> initialPhones) {
+        boolean success = false;
+        String customerId = null;
+        List<String> phones = initialPhones;
 
-                    return false;
-                });
-        return rightPhone;
+        while (!success && phones != null) {
+            for (String phone : phones) {
+                Response response = given()
+                        .spec(RequestSpecApi.REQUEST_SPECIFICATION_JSON)
+                        .header("authToken", token)
+                        .body(createCustomerPOJO
+                                .withName("Петя")
+                                .withPhone(phone)
+                                .withAddParam(new AddParam().withString("string")))
+                        .when()
+                        .post("/customer/postCustomer")
+                        .then().extract().response();
+
+                if (response.getStatusCode() == 200) {
+                    customerId = response.jsonPath().getString("id");
+                    success = true;
+                    System.out.println("Номер подошел");
+                    break;
+                }
+            }
+
+            if (!success) {
+                System.out.println("Ниодин номер не подошел, запрос новых номеров");
+                phones = getEmptyPhones(token);  // Запрашиваем новый список номеров
+            }
+        }
+
+        return customerId;
     }
+
 
     public String getCustomerById(String token, String customerId){
 
@@ -106,7 +114,6 @@ public class ActivationSteps {
                             .spec(RequestSpecApi.REQUEST_SPECIFICATION_JSON)
                             .header("authToken", token)
                             .queryParam("customerId", customerId)
-                            .when()
                             .get("/customer/getCustomerById")
                             .then()
                             .extract().response();
