@@ -11,13 +11,13 @@ public class RequestSpecApi {
 
     public static final RequestSpecification REQUEST_SPECIFICATION_JSON =
             new RequestSpecBuilder()
-                    .setBaseUri("http://localhost:8099")
+                    .setBaseUri("http://localhost:8090")
                     .setContentType(ContentType.JSON)
                     .build();
 
     public static final RequestSpecification REQUEST_SPECIFICATION_XML =
             new RequestSpecBuilder()
-                    .setBaseUri("http://localhost:8099")
+                    .setBaseUri("http://localhost:8090")
                     .setContentType(ContentType.XML)
                     .build();
 }
