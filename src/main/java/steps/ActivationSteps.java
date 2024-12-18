@@ -14,7 +14,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
+
 
 import static io.restassured.RestAssured.given;
 import static org.awaitility.Awaitility.await;
@@ -22,15 +22,13 @@ import static org.awaitility.Awaitility.await;
 
 public class ActivationSteps {
 
+    static String errorMessage,status, successPhone;
+    static List<String> resultPhones;
 
-    static String errorMessage, customerId, rightPhone, status;
-    static List<String> result;
 
     AuthRequestPOJO authRequestPOJO = new AuthRequestPOJO();
     CreateCustomerPOJO createCustomerPOJO = new CreateCustomerPOJO();
     ChangeCustomerStatusPOJO changeCustomerStatusPOJO = new ChangeCustomerStatusPOJO();
-
-
 
     public String getAuthToken(String login, String password){
 
@@ -57,7 +55,7 @@ public class ActivationSteps {
                     if (response.getStatusCode() == 200){
                         List<String> phones = response.jsonPath().getList("phones.phone", String.class);
                         if (!phones.isEmpty()){
-                            result = phones;
+                            resultPhones = phones;
                             return true;
                         }
                     } else { errorMessage = response.jsonPath().getString("errorMessage");
@@ -65,7 +63,7 @@ public class ActivationSteps {
                     }
                     return false;
                 });
-        return result;
+        return resultPhones;
     }
 
     public String postCustomer(String token, List<String> initialPhones) {
@@ -90,19 +88,19 @@ public class ActivationSteps {
                     customerId = response.jsonPath().getString("id");
                     success = true;
                     System.out.println("Номер подошел");
+                    successPhone = phone;
                     break;
                 }
             }
 
             if (!success) {
-                System.out.println("Ниодин номер не подошел, запрос новых номеров");
+                System.out.println("Не один номер не подошел, запрос новых номеров");
                 phones = getEmptyPhones(token);  // Запрашиваем новый список номеров
             }
         }
 
         return customerId;
     }
-
 
     public String getCustomerById(String token, String customerId){
 
@@ -127,7 +125,7 @@ public class ActivationSteps {
 
     }
 
-    public void findByPhoneNumber(String token, String phone){
+    public void findByPhoneNumber(String token, String customerID){
         String xmlBody;
         try {
             xmlBody = new String(Files.readAllBytes(Paths.get("src/test/resources/xmlQuery.xml")));
@@ -136,23 +134,23 @@ public class ActivationSteps {
         }
         String responseXmlBody = xmlBody
                 .replace("{authToken}", token.trim())
-                .replace("{phone}", phone);
-        System.out.println("Final XML body: " + responseXmlBody);
+                .replace("{phoneNumber}", successPhone);
+        //System.out.println("FINAL XML BODY: " + responseXmlBody);
 
-        Response response = RestAssured.given()
+        Response response = given()
                 .spec(RequestSpecApi.REQUEST_SPECIFICATION_XML)
                 .body(responseXmlBody)
                 .when()
                 .post("/customer/findByPhoneNumber")
                 .then().extract().response();
         if (response.statusCode() == 200) {
-            System.out.println(response.asString());
             XmlPath xmlPath = new XmlPath(response.getBody().asString());
             System.out.println(xmlPath.getString("Envelope.Body.customerId"));
         } else {
             System.err.println("Error: Status code " + response.statusCode());
             System.err.println("Response: " + response.asString());
         }
+
     }
 
     public void changeCustomerStatus(String token, String customerId, String status){

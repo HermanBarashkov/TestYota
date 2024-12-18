@@ -4,6 +4,6 @@
 		<authToken>{authToken}</authToken>
 	</ns2:Header>
 	<ns2:Body>
-		<phoneNumber>{phone}</phoneNumber>
+		<phoneNumber>{phoneNumber}</phoneNumber>
 	</ns2:Body>
 </ns3:Envelope>

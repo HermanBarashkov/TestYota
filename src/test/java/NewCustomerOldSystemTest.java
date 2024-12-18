@@ -1,4 +1,4 @@
-/*import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import service.BaseTest;
 import service.Employer;
@@ -14,4 +14,4 @@ public class NewCustomerOldSystemTest extends BaseTest {
                 activationSteps.postCustomer(employer.getToken(),
                         activationSteps.getEmptyPhones(employer.getToken())));
     }
-}*/
+}
