@@ -1,3 +1,4 @@
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import service.BaseTest;
@@ -9,10 +10,11 @@ public class ActivatedCustomerTest extends BaseTest {
 
     @ParameterizedTest
     @MethodSource("dataProviderToken")
+    @DisplayName("Проверка активации нового абонента ")
     public void activatedCustomer(Employer employer){
-        System.out.println(activationSteps.getCustomerById(employer.getToken(),
+        activationSteps.getCustomerById(employer.getToken(),
                 activationSteps.postCustomer(employer.getToken(),
-                        activationSteps.getEmptyPhones(employer.getToken()))));
+                        activationSteps.getEmptyPhones(employer.getToken())));
     }
 
 }

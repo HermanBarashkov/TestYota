@@ -20,11 +20,10 @@ public class BaseTest {
         user = new Employer(token, Employer.roleEnum.USER);
     }
 
-    static Stream<Arguments> dataProviderToken() {
+    public static Stream<Arguments> dataProviderToken() {
         return Stream.of(
                 Arguments.of(admin),
                 Arguments.of(user)
         );
     }
-
 }

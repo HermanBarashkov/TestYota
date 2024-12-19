@@ -1,7 +1,6 @@
 package steps;
 
 import service.config.RequestSpecApi;
-import io.restassured.RestAssured;
 import io.restassured.path.xml.XmlPath;
 import io.restassured.response.Response;
 import service.pojo.AddParam;
@@ -41,17 +40,22 @@ public class ActivationSteps {
                 .extract().path("token");
     }
 
+    private Response getListEmptyPhone(String token){
+        return given()
+                .spec(RequestSpecApi.REQUEST_SPECIFICATION_JSON)
+                .header("authToken", token)
+                .when()
+                .get("/simcards/getEmptyPhone")
+                .then()
+                .extract().response();
+    }
+
     public List<String> getEmptyPhones(String token){
         await()
-                .atMost(1, TimeUnit.MINUTES)
-                .pollInterval(200, TimeUnit.MILLISECONDS)
+                .atMost(30, TimeUnit.SECONDS)
+                .pollInterval(300, TimeUnit.MILLISECONDS)
                 .until(() -> {
-                    Response response = given()
-                            .spec(RequestSpecApi.REQUEST_SPECIFICATION_JSON)
-                            .header("authToken", token)
-                            .get("/simcards/getEmptyPhone")
-                            .then()
-                            .extract().response();
+                    Response response = getListEmptyPhone(token);
                     if (response.getStatusCode() == 200){
                         List<String> phones = response.jsonPath().getList("phones.phone", String.class);
                         if (!phones.isEmpty()){
@@ -112,6 +116,7 @@ public class ActivationSteps {
                             .spec(RequestSpecApi.REQUEST_SPECIFICATION_JSON)
                             .header("authToken", token)
                             .queryParam("customerId", customerId)
+                            .when()
                             .get("/customer/getCustomerById")
                             .then()
                             .extract().response();
