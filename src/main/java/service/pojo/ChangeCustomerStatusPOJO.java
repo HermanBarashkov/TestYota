@@ -12,5 +12,5 @@ import lombok.With;
 @Data
 @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
 public class ChangeCustomerStatusPOJO {
-    public String status;
+    private String status;
 }

@@ -13,6 +13,6 @@ import lombok.With;
 @NoArgsConstructor
 @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
 public class AuthRequestPOJO {
-    public String password;
-    public String login;
+    private String password;
+    private String login;
 }

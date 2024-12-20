@@ -13,6 +13,8 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
 
 import static io.restassured.RestAssured.given;
@@ -20,9 +22,6 @@ import static org.awaitility.Awaitility.await;
 
 
 public class ActivationSteps {
-
-    static String errorMessage,status, successPhone;
-    static List<String> resultPhones;
 
 
     AuthRequestPOJO authRequestPOJO = new AuthRequestPOJO();
@@ -37,76 +36,81 @@ public class ActivationSteps {
                 .when()
                 .post("/login")
                 .then().statusCode(200)
-                .extract().path("token");
+                .extract().jsonPath().getString("token");
     }
 
-    private Response getListEmptyPhone(String token){
-        return given()
-                .spec(RequestSpecApi.REQUEST_SPECIFICATION_JSON)
-                .header("authToken", token)
-                .when()
-                .get("/simcards/getEmptyPhone")
-                .then()
-                .extract().response();
+
+
+    public static List<String> getEmptyPhones(String token){
+        AtomicReference<List <String>> resultPhones = new AtomicReference<>();
+        await()
+                .atMost(30, TimeUnit.SECONDS)
+                .pollInterval(100, TimeUnit.MILLISECONDS)
+                .until(() -> {
+                    Response response = given()
+                            .spec(RequestSpecApi.REQUEST_SPECIFICATION_JSON)
+                            .header("authToken", token)
+                            .get("/simcards/getEmptyPhone")
+                            .then()
+                            .extract().response();
+                    if (response.getStatusCode() == 200){
+                        List<String> phones = response.jsonPath().getList("phones.phone", String.class);
+                        if (!phones.isEmpty()){
+                            resultPhones.set(phones);
+                            return true;
+                        }
+                    } else { String errorMessage = response.jsonPath().getString("errorMessage");
+                        System.out.println(errorMessage);
+                        return false;
+                    }
+                    return false;
+                });
+        return resultPhones.get();
     }
 
-    public List<String> getEmptyPhones(String token){
+    public String postCustomer(String token, List<String> initialPhones) {
+        AtomicBoolean success = new AtomicBoolean(false);
+        AtomicReference<String> customerId = new AtomicReference<>();
+        AtomicReference<List<String>> phones = new AtomicReference<>();
+        phones.set(initialPhones);
+        AtomicReference<String> successPhone = new AtomicReference<>();
+
         await()
                 .atMost(30, TimeUnit.SECONDS)
                 .pollInterval(300, TimeUnit.MILLISECONDS)
                 .until(() -> {
-                    Response response = getListEmptyPhone(token);
-                    if (response.getStatusCode() == 200){
-                        List<String> phones = response.jsonPath().getList("phones.phone", String.class);
-                        if (!phones.isEmpty()){
-                            resultPhones = phones;
+                    for (String phone : phones.get()) {
+                        Response response = given()
+                                .spec(RequestSpecApi.REQUEST_SPECIFICATION_JSON)
+                                .header("authToken", token)
+                                .body(createCustomerPOJO
+                                        .withName("Петя")
+                                        .withPhone(phone)
+                                        .withAddParam(new AddParam().withString("string")))
+                                .when()
+                                .post("/customer/postCustomer")
+                                .then().extract().response();
+
+                        if (response.getStatusCode() == 200) {
+                            customerId.set(response.jsonPath().getString("id"));
+                            successPhone.set(phone);
+                            success.set(true);
+                            System.out.println("Номер подошел");
                             return true;
                         }
-                    } else { errorMessage = response.jsonPath().getString("errorMessage");
-                        System.out.println(errorMessage);
+                    }
+
+                    if (!success.get()) {
+                        System.out.println("Не один номер не подошел, запрос новых номеров");
+                        phones.set(getEmptyPhones(token));  // Запрашиваем новый список номеров
                     }
                     return false;
                 });
-        return resultPhones;
+        createCustomerPOJO = new CreateCustomerPOJO(" ", successPhone.get(), new AddParam(""));
+        return customerId.get();
     }
 
-    public String postCustomer(String token, List<String> initialPhones) {
-        boolean success = false;
-        String customerId = null;
-        List<String> phones = initialPhones;
-
-        while (!success && phones != null) {
-            for (String phone : phones) {
-                Response response = given()
-                        .spec(RequestSpecApi.REQUEST_SPECIFICATION_JSON)
-                        .header("authToken", token)
-                        .body(createCustomerPOJO
-                                .withName("Петя")
-                                .withPhone(phone)
-                                .withAddParam(new AddParam().withString("string")))
-                        .when()
-                        .post("/customer/postCustomer")
-                        .then().extract().response();
-
-                if (response.getStatusCode() == 200) {
-                    customerId = response.jsonPath().getString("id");
-                    success = true;
-                    System.out.println("Номер подошел");
-                    successPhone = phone;
-                    break;
-                }
-            }
-
-            if (!success) {
-                System.out.println("Не один номер не подошел, запрос новых номеров");
-                phones = getEmptyPhones(token);  // Запрашиваем новый список номеров
-            }
-        }
-
-        return customerId;
-    }
-
-    public String getCustomerById(String token, String customerId){
+    public void getCustomerById(String token, String customerId){
 
         await()
                 .atMost(245, TimeUnit.SECONDS)
@@ -121,12 +125,10 @@ public class ActivationSteps {
                             .then()
                             .extract().response();
                     if (response.statusCode() == 200){
-                        status = response.jsonPath().getString("return.status");
-                        return "ACTIVE".equals(status);
+                        return "ACTIVE".equals(response.jsonPath().getString("return.status"));
                     }
                     return false;
                 });
-        return status;
 
     }
 
@@ -139,7 +141,7 @@ public class ActivationSteps {
         }
         String responseXmlBody = xmlBody
                 .replace("{authToken}", token.trim())
-                .replace("{phoneNumber}", successPhone);
+                .replace("{phoneNumber}", createCustomerPOJO.getPhone());
         //System.out.println("FINAL XML BODY: " + responseXmlBody);
 
         Response response = given()
