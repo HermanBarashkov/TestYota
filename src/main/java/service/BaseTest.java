@@ -19,7 +19,7 @@ public class BaseTest {
         user = new Employer(token, Employer.roleEnum.USER);
     }
 
-    static Stream<Employer> dataProviderToken() {
+    public static Stream<Employer> dataProviderToken() {
         return Stream.of(admin, user);
     }
 }
