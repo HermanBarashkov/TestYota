@@ -1,5 +1,6 @@
 package steps;
 
+
 import service.config.RequestSpecApi;
 import io.restassured.path.xml.XmlPath;
 import io.restassured.response.Response;
@@ -7,6 +8,8 @@ import service.pojo.AddParam;
 import service.pojo.AuthRequestPOJO;
 import service.pojo.ChangeCustomerStatusPOJO;
 import service.pojo.CreateCustomerPOJO;
+
+
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -24,9 +27,11 @@ import static org.awaitility.Awaitility.await;
 public class ActivationSteps {
 
 
+
     AuthRequestPOJO authRequestPOJO = new AuthRequestPOJO();
     CreateCustomerPOJO createCustomerPOJO = new CreateCustomerPOJO();
     ChangeCustomerStatusPOJO changeCustomerStatusPOJO = new ChangeCustomerStatusPOJO();
+
 
     public String getAuthToken(String login, String password){
 
@@ -35,7 +40,9 @@ public class ActivationSteps {
                 .body(authRequestPOJO.withLogin(login).withPassword(password))
                 .when()
                 .post("/login")
-                .then().statusCode(200)
+                .then()
+                .log().all()
+                .statusCode(200)
                 .extract().jsonPath().getString("token");
     }
 
@@ -52,6 +59,7 @@ public class ActivationSteps {
                             .header("authToken", token)
                             .get("/simcards/getEmptyPhone")
                             .then()
+                            .log().all()
                             .extract().response();
                     if (response.getStatusCode() == 200){
                         List<String> phones = response.jsonPath().getList("phones.phone", String.class);
@@ -59,14 +67,13 @@ public class ActivationSteps {
                             resultPhones.set(phones);
                             return true;
                         }
-                    } else { String errorMessage = response.jsonPath().getString("errorMessage");
-                        System.out.println(errorMessage);
-                        return false;
-                    }
+                    } else return false;
+
                     return false;
                 });
         return resultPhones.get();
     }
+
 
     public String postCustomer(String token, List<String> initialPhones) {
         AtomicBoolean success = new AtomicBoolean(false);
@@ -89,7 +96,9 @@ public class ActivationSteps {
                                         .withAddParam(new AddParam().withString("string")))
                                 .when()
                                 .post("/customer/postCustomer")
-                                .then().extract().response();
+                                .then()
+                                .log().all()
+                                .extract().response();
 
                         if (response.getStatusCode() == 200) {
                             customerId.set(response.jsonPath().getString("id"));
@@ -110,6 +119,7 @@ public class ActivationSteps {
         return customerId.get();
     }
 
+
     public void getCustomerById(String token, String customerId){
 
         await()
@@ -123,6 +133,7 @@ public class ActivationSteps {
                             .when()
                             .get("/customer/getCustomerById")
                             .then()
+                            .log().all()
                             .extract().response();
                     if (response.statusCode() == 200){
                         return "ACTIVE".equals(response.jsonPath().getString("return.status"));
@@ -131,6 +142,7 @@ public class ActivationSteps {
                 });
 
     }
+
 
     public void findByPhoneNumber(String token, String customerID){
         String xmlBody;
@@ -149,7 +161,9 @@ public class ActivationSteps {
                 .body(responseXmlBody)
                 .when()
                 .post("/customer/findByPhoneNumber")
-                .then().extract().response();
+                .then()
+                .log().all()
+                .extract().response();
         if (response.statusCode() == 200) {
             XmlPath xmlPath = new XmlPath(response.getBody().asString());
             System.out.println(xmlPath.getString("Envelope.Body.customerId"));
@@ -160,6 +174,7 @@ public class ActivationSteps {
 
     }
 
+
     public void changeCustomerStatus(String token, String customerId, String status){
         given()
                 .spec(RequestSpecApi.REQUEST_SPECIFICATION_JSON)
@@ -169,6 +184,7 @@ public class ActivationSteps {
                 .when()
                 .post("/customer/{customerId}/changeCustomerStatus")
                 .then()
+                .log().all()
                 .extract().response();
         System.out.println("Статус изменен на: " + status);
     }
