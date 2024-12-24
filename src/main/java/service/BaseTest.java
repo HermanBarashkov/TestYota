@@ -1,7 +1,6 @@
 package service;
 
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.params.provider.Arguments;
 import steps.ActivationSteps;
 import java.util.stream.Stream;
 
@@ -20,10 +19,7 @@ public class BaseTest {
         user = new Employer(token, Employer.roleEnum.USER);
     }
 
-    public static Stream<Arguments> dataProviderToken() {
-        return Stream.of(
-                Arguments.of(admin),
-                Arguments.of(user)
-        );
+    public static Stream<Employer> dataProviderToken() {
+        return Stream.of(admin, user);
     }
 }

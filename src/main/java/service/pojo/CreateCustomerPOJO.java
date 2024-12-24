@@ -9,7 +9,7 @@ import lombok.*;
 @Data
 @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
 public class CreateCustomerPOJO {
-    public String name;
-    public String phone;
-    public AddParam addParam;
+    private String name;
+    private String phone;
+    private AddParam addParam;
 }
