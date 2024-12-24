@@ -12,10 +12,10 @@ public class BaseTest {
 
     @BeforeAll
     public static void initTest() {
-        String token = activationSteps.getAuthToken("admin", "password");
+        String token = activationSteps.getAuthToken(System.getProperty("loginAdmin"), System.getProperty("passwordAdmin"));
         admin = new Employer(token, Employer.roleEnum.ADMIN);
 
-        token = activationSteps.getAuthToken("user", "password");
+        token = activationSteps.getAuthToken(System.getProperty("loginUser"),System.getProperty("passwordUser"));
         user = new Employer(token, Employer.roleEnum.USER);
     }
 
