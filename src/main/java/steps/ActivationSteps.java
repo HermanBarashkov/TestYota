@@ -41,7 +41,7 @@ public class ActivationSteps {
 
 
 
-    public static List<String> getEmptyPhones(String token){
+    public List<String> getEmptyPhones(String token){
         AtomicReference<List <String>> resultPhones = new AtomicReference<>();
         await()
                 .atMost(30, TimeUnit.SECONDS)
