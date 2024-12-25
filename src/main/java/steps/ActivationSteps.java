@@ -1,6 +1,8 @@
 package steps;
 
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import service.config.RequestSpecApi;
 import io.restassured.path.xml.XmlPath;
 import io.restassured.response.Response;
@@ -27,7 +29,7 @@ import static org.awaitility.Awaitility.await;
 public class ActivationSteps {
 
 
-
+    private static final Logger log = LoggerFactory.getLogger(ActivationSteps.class);
     AuthRequestPOJO authRequestPOJO = new AuthRequestPOJO();
     CreateCustomerPOJO createCustomerPOJO = new CreateCustomerPOJO();
     ChangeCustomerStatusPOJO changeCustomerStatusPOJO = new ChangeCustomerStatusPOJO();
@@ -35,15 +37,18 @@ public class ActivationSteps {
 
     public String getAuthToken(String login, String password){
 
-        return given()
+        Response response = given()
                 .spec(RequestSpecApi.REQUEST_SPECIFICATION_JSON)
                 .body(authRequestPOJO.withLogin(login).withPassword(password))
                 .when()
                 .post("/login")
                 .then()
-                .log().all()
                 .statusCode(200)
-                .extract().jsonPath().getString("token");
+                .extract().response();
+        String token = response.jsonPath().getString("token");
+        log.info("Токен для роли {}: {}", login, token);
+        return token;
+
     }
 
 
@@ -59,16 +64,17 @@ public class ActivationSteps {
                             .header("authToken", token)
                             .get("/simcards/getEmptyPhone")
                             .then()
-                            .log().all()
                             .extract().response();
                     if (response.getStatusCode() == 200){
                         List<String> phones = response.jsonPath().getList("phones.phone", String.class);
                         if (!phones.isEmpty()){
                             resultPhones.set(phones);
+                            log.info("Список телефонов для токена {}: {}", token, resultPhones);
                             return true;
                         }
-                    } else return false;
-
+                    } else{log.error(response.jsonPath().getString("errorMessage"));
+                        return false;
+                    }
                     return false;
                 });
         return resultPhones.get();
@@ -97,20 +103,19 @@ public class ActivationSteps {
                                 .when()
                                 .post("/customer/postCustomer")
                                 .then()
-                                .log().all()
                                 .extract().response();
 
                         if (response.getStatusCode() == 200) {
                             customerId.set(response.jsonPath().getString("id"));
                             successPhone.set(phone);
                             success.set(true);
-                            System.out.println("Номер подошел");
+                            log.info("Для абонента с токеном: {}, выдан ID: {} и номер: {}", token, customerId, successPhone);
                             return true;
                         }
                     }
 
                     if (!success.get()) {
-                        System.out.println("Не один номер не подошел, запрос новых номеров");
+                        log.info("Для пользователя с токеном: {}, ни один номер не подошел, запрос нового списка номеров", token);
                         phones.set(getEmptyPhones(token));  // Запрашиваем новый список номеров
                     }
                     return false;
@@ -133,10 +138,13 @@ public class ActivationSteps {
                             .when()
                             .get("/customer/getCustomerById")
                             .then()
-                            .log().all()
                             .extract().response();
-                    if (response.statusCode() == 200){
-                        return "ACTIVE".equals(response.jsonPath().getString("return.status"));
+                    if ("ACTIVE".equals(response.jsonPath().getString("return.status"))){
+                        log.info("Абонент с ID: {}, статус: {}, паспортные данные: {}",
+                                customerId,
+                                    response.jsonPath().getString("return.status"),
+                                        response.jsonPath().getString("return.pd"));
+                        return true;
                     }
                     return false;
                 });
@@ -162,14 +170,13 @@ public class ActivationSteps {
                 .when()
                 .post("/customer/findByPhoneNumber")
                 .then()
-                .log().all()
                 .extract().response();
         if (response.statusCode() == 200) {
             XmlPath xmlPath = new XmlPath(response.getBody().asString());
-            System.out.println(xmlPath.getString("Envelope.Body.customerId"));
+            log.info("ID: {} сохранился в старой системе",xmlPath.getString("Envelope.Body.customerId"));
         } else {
-            System.err.println("Error: Status code " + response.statusCode());
-            System.err.println("Response: " + response.asString());
+            log.info("Error: Status code {}", response.statusCode());
+            log.info("Response: {}", response.asString());
         }
 
     }
@@ -184,9 +191,8 @@ public class ActivationSteps {
                 .when()
                 .post("/customer/{customerId}/changeCustomerStatus")
                 .then()
-                .log().all()
                 .extract().response();
-        System.out.println("Статус изменен на: " + status);
+        log.info("Статус изменен на: {}", status);
     }
 
 
